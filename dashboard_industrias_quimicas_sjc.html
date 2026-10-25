@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Indústrias Químicas — São José dos Campos (RAIS) — mapa geográfico</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+<style>
+:root{--bg:#fff7ed;--card:#ffffff;--card2:#fff1d6;--txt:#7c2d12;--mut:#9a3412;--acc:#ea580c;--acc2:#c2410c;--ok:#16a34a;--grid:#fed7aa}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:var(--bg);color:var(--txt);padding:18px;background-image:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);min-height:100vh}
+h1{font-size:20px}h1 span{color:var(--acc)}
+.sub{color:var(--mut);font-size:12px;margin-top:4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.kpi{background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:12px}
+.kpi .v{font-size:24px;font-weight:700;color:var(--acc)}.kpi .v.o{color:var(--acc2)}.kpi .v.g{color:var(--ok)}
+.kpi .l{font-size:11px;color:var(--mut);margin-top:3px;text-transform:uppercase;letter-spacing:.4px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.f{display:flex;flex-direction:column;gap:3px}
+.f label{font-size:10px;color:var(--mut);text-transform:uppercase}
+.f select,.f input{background:var(--card2);color:var(--txt);border:1px solid var(--grid);border-radius:6px;padding:6px 8px;font-size:12px;min-width:150px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.charts{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--grid);border-radius:10px;padding:12px}
+.panel h3{font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.panel h3 .badge{background:var(--acc);color:#fff;border-radius:10px;padding:1px 8px;font-size:10px;margin-left:6px}
+.bar{display:grid;grid-template-columns:170px 1fr 62px;align-items:center;gap:8px;margin:5px 0;font-size:12px}
+.bar .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .track{background:var(--card2);border-radius:4px;height:16px;position:relative}
+.bar .fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#fed7aa,var(--acc))}
+.bar.o .fill{background:linear-gradient(90deg,#fdba74,var(--acc2))}
+.bar .n{text-align:right;color:var(--mut)}
+.mapwrap{display:grid;grid-template-columns:3fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){.mapwrap{grid-template-columns:1fr}}
+#map{width:100%;height:520px;border-radius:8px;border:1px solid var(--grid);background:#fffbeb;z-index:1}
+.legend{display:flex;gap:14px;align-items:center;font-size:11px;color:var(--mut);margin-top:6px;flex-wrap:wrap}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+.sw{width:14px;height:14px;border-radius:3px;display:inline-block;margin-right:4px;border:1px solid #fed7aa}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th{color:var(--mut);text-align:left;font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--grid);padding:6px 4px}
+td{padding:5px 4px;border-bottom:1px solid #fed7aa}
+tr:hover td{background:#ffedd5}
+.tag{padding:1px 7px;border-radius:99px;font-size:10px}
+.tag.s{background:#dcfce7;color:var(--ok)}.tag.n{background:#ffedd5;color:var(--acc2)}
+.tag.geoerr{background:#fde68a;color:#92400e}
+.foot{color:var(--mut);font-size:10px;margin-top:14px;line-height:1.6}
+note{background:#ffedd5;border-left:4px solid var(--acc);padding:8px 10px;border-radius:6px;color:var(--mut);font-size:11px;margin:8px 0}
+.btn{display:inline-block;padding:5px 10px;border:1px solid var(--acc);background:var(--card2);
+     color:var(--acc2);border-radius:6px;font-size:11px;cursor:pointer}
+.btn:hover{background:var(--acc);color:#fff}
+.btn.active{background:var(--acc);color:#fff}
+.metricgrid{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.metricbtn{padding:5px 10px;border:1px solid var(--grid);background:var(--card2);
+            color:var(--mut);border-radius:6px;font-size:11px;cursor:pointer;font-weight:600}
+.metricbtn:hover{border-color:var(--acc)}
+.metricbtn.active{background:var(--acc);color:#fff;border-color:var(--acc)}
+.sector-card{padding:8px;background:var(--card2);border:1px solid var(--grid);border-radius:6px}
+.sector-card .sname{font-weight:600;color:var(--acc2);margin-bottom:2px;font-size:12px}
+.sector-card .smeta{font-size:10px;color:var(--mut)}
+.sector-card .sv{font-size:18px;color:var(--acc);font-weight:700;margin:4px 0}
+.heatgrid{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.heatrow{display:grid;grid-template-columns:62px 1fr 110px 70px 70px;align-items:center;gap:8px;font-size:12px}
+.heatrow .headcode{font-family:Menlo,Consolas,monospace;color:var(--acc2);font-weight:600}
+.heatrow .headname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.heatcell{height:34px;border-radius:6px;position:relative;color:#fff;padding:4px 8px;display:flex;align-items:center;font-weight:600;border:1px solid #fed7aa;overflow:hidden}
+.heatcell .tagzinho{background:rgba(255,255,255,.85);color:#7c2d12;font-size:9px;padding:2px 6px;border-radius:6px;margin-right:6px;font-weight:600}
+.heatcell .num{font-size:13px;margin-left:auto}
+.heatcell.light{color:#7c2d12}
+.leaflet-popup-content{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#7c2d12}
+.leaflet-popup-content b{color:#9a3412}
+.leaflet-popup-content .popnum{font-size:15px;color:var(--acc);font-weight:700;margin:4px 0}
+.leaflet-popup-content .poprow{display:flex;justify-content:space-between;border-top:1px solid #fed7aa;padding:3px 0}
+.leaflet-popup-content .poprow:first-of-type{border-top:none}
+.leaflet-popup-content .poprow span:last-child{font-weight:600;color:#7c2d12}
+</style>
+</head>
+<body>
+<h1>🏭 Indústrias Químicas — <span>São José dos Campos / SP</span></h1>
+<div class="sub">Painel interativo RAIS · 2.787 vínculos CLT · filtros sincronizados · mapa geográfico em tiles OpenStreetMap</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="v" id="k1">–</div><div class="l">Estabelecimentos</div></div>
+  <div class="kpi"><div class="v o" id="k2">–</div><div class="l">Vínculos CLT</div></div>
+  <div class="kpi"><div class="v" id="k3">–</div><div class="l">Vínculos ativos</div></div>
+  <div class="kpi"><div class="v g" id="k4">–</div><div class="l">No Simples Nacional</div></div>
+  <div class="kpi"><div class="v" id="k5">–</div><div class="l">No Simples Nacional (%)</div></div>
+  <div class="kpi"><div class="v o" id="k6">–</div><div class="l">Setores postais</div></div>
+  <div class="kpi"><div class="v g" id="k7">–</div><div class="l">Maior estab. (vínc.)</div></div>
+  <div class="kpi"><div class="v" id="k8">–</div><div class="l">RAIS Negativa (nº)</div></div>
+</div>
+
+<div class="filters">
+  <div class="f"><label>Segmento</label><select id="fSeg"><option value="">Todos</option></select></div>
+  <div class="f"><label>Setor postal (SJC)</label><select id="fSet"><option value="">Todos</option></select></div>
+  <div class="f"><label>Bairro Nominatim</label><select id="fBai"><option value="">Todos</option></select></div>
+  <div class="f"><label>Faixa de tamanho</label><select id="fTam"><option value="">Todas</option></select></div>
+  <div class="f"><label>Simples Nacional</label><select id="fSimp"><option value="">Todos</option><option>Sim</option><option>Não</option></select></div>
+  <div class="f"><label>Natureza jurídica</label><select id="fNj"><option value="">Todas</option></select></div>
+  <div class="f"><label>Atividade no ano</label><select id="fAtv"><option value="">Todos</option><option>Sim</option><option>Não</option></select></div>
+  <div class="f"><label>Buscar atividade (CNAE)</label><input id="fQ" placeholder="ex.: cosméticos, resinas…"></div>
+  <div class="f"><label>&nbsp;</label><button id="fClr" class="btn" style="background:var(--card2);color:var(--acc2);cursor:pointer">Limpar filtros</button></div>
+</div>
+
+<!-- MAPA GEOGRAFICO REAL -->
+<div class="panel" style="margin-bottom:12px">
+  <h3>🗺️ Mapa geográfico — concentração por CEP, ponderada pela métrica selecionada <span class="badge">Leaflet + tiles OpenStreetMap</span></h3>
+  <note>
+    <b>Métricas relevantes da base RAIS para plotagem (calculadas dos dados reais da planilha):</b>
+    <b>Vínculos CLT</b> (= Vínculos Ativos nesta extração), <b>Estabelecimentos</b>, <b>% no Simples Nacional</b>, <b>Média de vínculos por estabelecimento</b>,
+    <b>Setor postal mais concentrado</b>. Cada círculo representa um CEP geocodificado — <b>raio</b> e <b>intensidade da cor</b> variam com a métrica escolhida;
+    <b>clique</b> em um círculo para ver detalhes do estabelecimento (atividade, CNAE, vínculos, setor, bairro Nominatim).
+    Círculos marcados em <span style="color:#92400e"><b>marrom-claro</b></span> são CEPs sem logradouro Nominatim (coordenada no centroide do município — transparência declarada).
+  </note>
+  <div class="metricgrid">
+    <span style="font-size:11px;color:var(--mut);font-weight:600;align-self:center">Métrica&nbsp;→&nbsp;</span>
+    <div class="metricbtn active" data-metric="vin">Vínculos CLT</div>
+    <div class="metricbtn" data-metric="est">Estabelecimentos</div>
+    <div class="metricbtn" data-metric="media">Média vínculos/estab.</div>
+    <div class="metricbtn" data-metric="simples">% no Simples</div>
+  </div>
+  <div style="margin-top:10px">
+    <div id="map"></div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:#fed7aa"></span>menor</span>
+    <span><span class="sw" style="background:#fdd9b6"></span></span>
+    <span><span class="sw" style="background:#fdba74"></span></span>
+    <span><span class="sw" style="background:#fb923c"></span></span>
+    <span><span class="sw" style="background:#f97316"></span></span>
+    <span><span class="sw" style="background:#ea580c"></span></span>
+    <span><span class="sw" style="background:#c2410c"></span></span>
+    <span><span class="sw" style="background:#9a3412"></span>maior</span>
+    <span style="margin-left:auto"><span class="dot" style="background:#92400e;opacity:.55"></span>CEP sem logradouro Nominatim (centroide)</span>
+  </div>
+</div>
+
+<div class="charts">
+  <div class="panel"><h3>Vínculos CLT por segmento</h3><div id="cSeg"></div></div>
+  <div class="panel"><h3>Estabelecimentos por faixa de tamanho</h3><div id="cTam"></div></div>
+  <div class="panel" style="grid-column:1/-1"><h3>Top 10 atividades (CNAE) por vínculos CLT</h3><div id="cCnae"></div></div>
+</div>
+
+<!-- Heatgrid por setor postal (complementa o mapa) -->
+<div class="panel" style="margin-top:12px">
+  <h3>🔥 Heatmap por setor postal — concentração de vínculos <span class="badge">100% da base</span></h3>
+  <div class="heatgrid" id="heatgrid"></div>
+</div>
+
+<!-- Painel lateral: KPIs por setor postal selecionado + lista detalhada -->
+<div class="mapwrap">
+  <div class="panel">
+    <h3>Estabelecimentos filtrados no mapa</h3>
+    <div style="max-height:520px;overflow:auto">
+      <table><thead><tr><th>#</th><th>Atividade</th><th>Vínc.</th><th>Setor / Bairro</th><th>CEP</th><th>Simples</th></tr></thead>
+      <tbody id="tb"></tbody></table>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>Top setores no recorte atual</h3>
+    <div id="topSetores"></div>
+  </div>
+</div>
+
+<div class="foot" id="footNote"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+<script>
+const DATA = [{"id": 1, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 2, "vinA": 2, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12244-000", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Avenida Shishima Hifumi", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12244", "setor": "Bosque dos Eucaliptos", "geo": "Sim"}, {"id": 2, "ativ": "FABRICAÇÃO DE PRODUTOS QUÍMICOS INORGÂNICOS NÃO ESPECIFICADOS ANTERIORMENTE", "seg": "Químicos Básicos e Especialidades", "vin": 9, "vinA": 9, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20193, "cep": "12245-902", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Euclides Miragaia 433", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12245", "setor": "Parque Industrial", "geo": "Sim"}, {"id": 3, "ativ": "FABRICAÇÃO DE PRODUTOS DE LIMPEZA E POLIMENTO", "seg": "Saneantes, Higiene e Cosméticos", "vin": 48, "vinA": 48, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20622, "cep": "12213-330", "lat": NaN, "lon": NaN, "bai": NaN, "logradouro": NaN, "proxy_centroide": false, "metodo": "não geocodificado", "cabeco": "12213", "setor": "Jardim Paulista (norte)", "geo": "Não"}, {"id": 4, "ativ": "FABRICAÇÃO DE RESINAS TERMOPLÁSTICAS", "seg": "Resinas e Plásticos", "vin": 1, "vinA": 1, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20312, "cep": "12213-011", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Jaguari", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12213", "setor": "Jardim Paulista (norte)", "geo": "Sim"}, {"id": 5, "ativ": "FABRICAÇÃO DE PRODUTOS QUÍMICOS ORGÂNICOS NÃO ESPECIFICADOS ANTERIORMENTE", "seg": "Químicos Básicos e Especialidades", "vin": 19, "vinA": 19, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20291, "cep": "12238-500", "lat": -23.2549193, "lon": -45.9305957, "bai": NaN, "logradouro": "Rua Januaria", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 6, "ativ": "FABRICAÇÃO DE ADITIVOS DE USO INDUSTRIAL", "seg": "Químicos Básicos e Especialidades", "vin": 125, "vinA": 125, "est_count": 1, "tamo": 7, "tamf": "De 100 a 249 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20932, "cep": "12241-421", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Carlos Marcondes", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12241", "setor": "Vila Industrial", "geo": "Sim"}, {"id": 7, "ativ": "FABRICAÇÃO DE RESINAS TERMOFIXAS", "seg": "Resinas e Plásticos", "vin": 37, "vinA": 37, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20321, "cep": "12238-320", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Moxoto", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 8, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 8, "vinA": 8, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "EIRELI — Empresa Individual de Responsabilidade Limitada", "cnae2": 20631, "cep": "12246-002", "lat": -23.2122358, "lon": -45.9080904, "bai": "Jardim Altos Esplanada", "logradouro": "Rua Armando de Oliveira Cobra", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12246", "setor": "Bosque dos Eucaliptos/Aquarius", "geo": "Sim"}, {"id": 9, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 9, "vinA": 9, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12238-420", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Mogiana", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 10, "ativ": "FABRICAÇÃO DE MEDICAMENTOS PARA USO VETERINÁRIO", "seg": "Farmacêutico e Veterinário", "vin": 16, "vinA": 16, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21220, "cep": "12238-573", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Salviano José da Silva", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 11, "ativ": "FABRICAÇÃO DE IMPERMEABILIZANTES, SOLVENTES E PRODUTOS AFINS", "seg": "Tintas, Vernizes e Solventes", "vin": 12, "vinA": 12, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20738, "cep": "12238-577", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Romualdo Davoli", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 12, "ativ": "FABRICAÇÃO DE DEFENSIVOS AGRÍCOLAS", "seg": "Agroquímicos e Fertilizantes", "vin": 229, "vinA": 229, "est_count": 1, "tamo": 7, "tamf": "De 100 a 249 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20517, "cep": "12241-900", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Carlos Marcondes 1200", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12241", "setor": "Vila Industrial", "geo": "Sim"}, {"id": 13, "ativ": "FABRICAÇÃO DE PRODUTOS QUÍMICOS NÃO ESPECIFICADOS ANTERIORMENTE", "seg": "Químicos Básicos e Especialidades", "vin": 6, "vinA": 6, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20991, "cep": "12247-016", "lat": -23.156525, "lon": -45.7909949, "bai": NaN, "logradouro": "Estrada Doutor Altino Bondesan", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12247", "setor": "Campos de São José", "geo": "Sim"}, {"id": 14, "ativ": "FABRICAÇÃO DE PRODUTOS DE LIMPEZA E POLIMENTO", "seg": "Saneantes, Higiene e Cosméticos", "vin": 1, "vinA": 1, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Não", "nj": "Empresário Individual", "cnae2": 20622, "cep": "12238-300", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Praça Cariri", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 15, "ativ": "FABRICAÇÃO DE MEDICAMENTOS PARA USO HUMANO", "seg": "Farmacêutico e Veterinário", "vin": 34, "vinA": 34, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21211, "cep": "12238-565", "lat": -23.2669767, "lon": -45.9156716, "bai": NaN, "logradouro": "Avenida Engenheiro Juarez de Siqueira Britto Wanderley", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 16, "ativ": "FABRICAÇÃO DE RESINAS TERMOPLÁSTICAS", "seg": "Resinas e Plásticos", "vin": 43, "vinA": 43, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Anônima Fechada (S.A.)", "cnae2": 20312, "cep": "12241-421", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Carlos Marcondes", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12241", "setor": "Vila Industrial", "geo": "Sim"}, {"id": 17, "ativ": "FABRICAÇÃO DE PREPARAÇÕES FARMACÊUTICAS", "seg": "Farmacêutico e Veterinário", "vin": 137, "vinA": 137, "est_count": 1, "tamo": 7, "tamf": "De 100 a 249 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21238, "cep": "12238-410", "lat": -22.910993, "lon": -45.9521312, "bai": "São Francisco Xavier", "logradouro": "Rua Jaguarão", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 18, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 4, "vinA": 4, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12237-150", "lat": -22.9091666, "lon": -45.9447726, "bai": "São Francisco Xavier", "logradouro": "Rua Oros", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12237", "setor": "Putim", "geo": "Sim"}, {"id": 19, "ativ": "FABRICAÇÃO DE RESINAS TERMOPLÁSTICAS", "seg": "Resinas e Plásticos", "vin": 25, "vinA": 25, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20312, "cep": "12213-011", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Jaguari", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12213", "setor": "Jardim Paulista (norte)", "geo": "Sim"}, {"id": 20, "ativ": "FABRICAÇÃO DE PRODUTOS DE LIMPEZA E POLIMENTO", "seg": "Saneantes, Higiene e Cosméticos", "vin": 23, "vinA": 23, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20622, "cep": "12228-000", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Avenida João Rodolfo Castelli", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12228", "setor": "Eugênio de Melo", "geo": "Sim"}, {"id": 21, "ativ": "FABRICAÇÃO DE MEDICAMENTOS PARA USO VETERINÁRIO", "seg": "Farmacêutico e Veterinário", "vin": 12, "vinA": 12, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21220, "cep": "12238-571", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua José Sierra", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 22, "ativ": "FABRICAÇÃO DE MEDICAMENTOS PARA USO HUMANO", "seg": "Farmacêutico e Veterinário", "vin": 160, "vinA": 160, "est_count": 1, "tamo": 7, "tamf": "De 100 a 249 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21211, "cep": "12240-909", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rodovia Presidente Dutra Km 154", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12240", "setor": "Rodovia Dutra (polo industrial)", "geo": "Sim"}, {"id": 23, "ativ": "FABRICAÇÃO DE ADUBOS E FERTILIZANTES", "seg": "Agroquímicos e Fertilizantes", "vin": 9, "vinA": 9, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20134, "cep": "12209-000", "lat": -23.2818745, "lon": -45.8330569, "bai": NaN, "logradouro": "Avenida Rui Barbosa", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12209", "setor": "Centro", "geo": "Sim"}, {"id": 24, "ativ": "FABRICAÇÃO DE ADITIVOS DE USO INDUSTRIAL", "seg": "Químicos Básicos e Especialidades", "vin": 8, "vinA": 8, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20932, "cep": "12241-421", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Carlos Marcondes", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12241", "setor": "Vila Industrial", "geo": "Sim"}, {"id": 25, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 1, "vinA": 1, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12246-002", "lat": -23.2122358, "lon": -45.9080904, "bai": "Jardim Altos Esplanada", "logradouro": "Rua Armando de Oliveira Cobra", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12246", "setor": "Bosque dos Eucaliptos/Aquarius", "geo": "Sim"}, {"id": 26, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 44, "vinA": 44, "est_count": 1, "tamo": 5, "tamf": "De 20 a 49 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12238-573", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Salviano José da Silva", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 27, "ativ": "FABRICAÇÃO DE PRODUTOS DE LIMPEZA E POLIMENTO", "seg": "Saneantes, Higiene e Cosméticos", "vin": 4, "vinA": 4, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20622, "cep": "12238-360", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Miracema", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 28, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 11, "vinA": 11, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12238-370", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Búzios", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 29, "ativ": "FABRICAÇÃO DE PRODUTOS DE LIMPEZA E POLIMENTO", "seg": "Saneantes, Higiene e Cosméticos", "vin": 4, "vinA": 4, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20622, "cep": "12228-000", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Avenida João Rodolfo Castelli", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12228", "setor": "Eugênio de Melo", "geo": "Sim"}, {"id": 30, "ativ": "FABRICAÇÃO DE ADUBOS E FERTILIZANTES", "seg": "Agroquímicos e Fertilizantes", "vin": 4, "vinA": 4, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20134, "cep": "12238-530", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Joaçaba", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 31, "ativ": "FABRICAÇÃO DE TINTAS, VERNIZES, ESMALTES E LACAS", "seg": "Tintas, Vernizes e Solventes", "vin": 6, "vinA": 6, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20711, "cep": "12238-410", "lat": -22.910993, "lon": -45.9521312, "bai": "São Francisco Xavier", "logradouro": "Rua Jaguarão", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 32, "ativ": "FABRICAÇÃO DE PRODUTOS QUÍMICOS NÃO ESPECIFICADOS ANTERIORMENTE", "seg": "Químicos Básicos e Especialidades", "vin": 16, "vinA": 16, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20991, "cep": "12238-574", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Wilton Reis Costa", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 33, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 1, "vinA": 1, "est_count": 1, "tamo": 2, "tamf": "De 1 a 4 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12238-340", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Lagoa Santa", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 34, "ativ": "FABRICAÇÃO DE TINTAS, VERNIZES, ESMALTES E LACAS", "seg": "Tintas, Vernizes e Solventes", "vin": 5, "vinA": 5, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20711, "cep": "12238-460", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Guaianesia", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 35, "ativ": "FABRICAÇÃO DE TINTAS DE IMPRESSÃO", "seg": "Tintas, Vernizes e Solventes", "vin": 9, "vinA": 9, "est_count": 1, "tamo": 3, "tamf": "De 5 a 9 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20720, "cep": "12238-360", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Miracema", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 36, "ativ": "FABRICAÇÃO DE GASES INDUSTRIAIS", "seg": "Químicos Básicos e Especialidades", "vin": 16, "vinA": 16, "est_count": 1, "tamo": 4, "tamf": "De 10 a 19 vínculos", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20142, "cep": "12226-311", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Estrada Dom José Antonio do Couto", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12226", "setor": "Dom José", "geo": "Sim"}, {"id": 37, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 1689, "vinA": 1689, "est_count": 1, "tamo": 10, "tamf": "De 1.000 vínculos ou mais", "simp": "Não", "ativo": "Sim", "raisNeg": "Não", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12240-907", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rodovia Presidente Dutra Km 154", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12240", "setor": "Rodovia Dutra (polo industrial)", "geo": "Sim"}, {"id": 38, "ativ": "FABRICAÇÃO DE ADITIVOS DE USO INDUSTRIAL", "seg": "Químicos Básicos e Especialidades", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Não", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20932, "cep": "12235-170", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Professor Luiz Eurico Ferreira", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12235", "setor": "Vista Verde", "geo": "Sim"}, {"id": 39, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Não", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12238-340", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Lagoa Santa", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12238", "setor": "Jardim das Indústrias", "geo": "Sim"}, {"id": 40, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Sim", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12232-250", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Benedito Alexandre Trindade", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12232", "setor": "Vila Betânia", "geo": "Sim"}, {"id": 41, "ativ": "FABRICAÇÃO DE SABÕES E DETERGENTES SINTÉTICOS", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20614, "cep": "12235-160", "lat": -22.8488683, "lon": -45.905613, "bai": "São Francisco Xavier", "logradouro": "Rua Benedito Pinto da Cunha", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12235", "setor": "Vista Verde", "geo": "Sim"}, {"id": 42, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12246-000", "lat": -23.2155757, "lon": -45.906211, "bai": "Parque Residencial Aquarius", "logradouro": "Avenida Alfredo Ignácio Nogueira Penido", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12246", "setor": "Bosque dos Eucaliptos/Aquarius", "geo": "Sim"}, {"id": 43, "ativ": "FABRICAÇÃO DE PRODUTOS DE LIMPEZA E POLIMENTO", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Empresa Simples de Inovação (Inova Simples)", "cnae2": 20622, "cep": "12239-050", "lat": -23.2651996, "lon": -45.9103527, "bai": NaN, "logradouro": "Avenida Leonor de Almeida Ribeiro Souto", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12239", "setor": "Jardim Satélite", "geo": "Sim"}, {"id": 44, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12246-330", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua das Arraias", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12246", "setor": "Bosque dos Eucaliptos/Aquarius", "geo": "Sim"}, {"id": 45, "ativ": "FABRICAÇÃO DE MEDICAMENTOS PARA USO HUMANO", "seg": "Farmacêutico e Veterinário", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Não", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21211, "cep": "12243-081", "lat": -23.2072019, "lon": -45.9032339, "bai": "Vila Ema", "logradouro": "Avenida Jorge Zarur", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12243", "setor": "Jardim Esplanada", "geo": "Sim"}, {"id": 46, "ativ": "FABRICAÇÃO DE SABÕES E DETERGENTES SINTÉTICOS", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20614, "cep": "12245-820", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Euclides Miragaia", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12245", "setor": "Parque Industrial", "geo": "Sim"}, {"id": 47, "ativ": "FABRICAÇÃO DE MEDICAMENTOS PARA USO HUMANO", "seg": "Farmacêutico e Veterinário", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 21211, "cep": "12247-016", "lat": -23.156525, "lon": -45.7909949, "bai": NaN, "logradouro": "Estrada Doutor Altino Bondesan", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12247", "setor": "Campos de São José", "geo": "Sim"}, {"id": 48, "ativ": "FABRICAÇÃO DE PRODUTOS QUÍMICOS ORGÂNICOS NÃO ESPECIFICADOS ANTERIORMENTE", "seg": "Químicos Básicos e Especialidades", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Não", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20291, "cep": "12209-675", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Maceió", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12209", "setor": "Centro", "geo": "Sim"}, {"id": 49, "ativ": "FABRICAÇÃO DE PRODUTOS QUÍMICOS NÃO ESPECIFICADOS ANTERIORMENTE", "seg": "Químicos Básicos e Especialidades", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20991, "cep": "12247-016", "lat": -23.156525, "lon": -45.7909949, "bai": NaN, "logradouro": "Estrada Doutor Altino Bondesan", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12247", "setor": "Campos de São José", "geo": "Sim"}, {"id": 50, "ativ": "FABRICAÇÃO DE ADITIVOS DE USO INDUSTRIAL", "seg": "Químicos Básicos e Especialidades", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20932, "cep": "12235-160", "lat": -22.8488683, "lon": -45.905613, "bai": "São Francisco Xavier", "logradouro": "Rua Benedito Pinto da Cunha", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12235", "setor": "Vista Verde", "geo": "Sim"}, {"id": 51, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12228-324", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Rua Terezinha Cezar de Souza", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12228", "setor": "Eugênio de Melo", "geo": "Sim"}, {"id": 52, "ativ": "FABRICAÇÃO DE COSMÉTICOS, PRODUTOS DE PERFUMARIA E DE HIGIENE PESSOAL", "seg": "Saneantes, Higiene e Cosméticos", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20631, "cep": "12244-000", "lat": -23.17944, "lon": -45.88694, "bai": NaN, "logradouro": "Avenida Shishima Hifumi", "proxy_centroide": true, "metodo": "BrasilAPI / OSM", "cabeco": "12244", "setor": "Bosque dos Eucaliptos", "geo": "Sim"}, {"id": 53, "ativ": "FABRICAÇÃO DE ADUBOS E FERTILIZANTES", "seg": "Agroquímicos e Fertilizantes", "vin": 0, "vinA": 0, "est_count": 1, "tamo": 1, "tamf": "Zero vínculos", "simp": "Sim", "ativo": "Não", "raisNeg": "Sim", "nj": "Sociedade Empresária Limitada (LTDA)", "cnae2": 20134, "cep": "12248-899", "lat": -23.1439647, "lon": -45.8865292, "bai": NaN, "logradouro": "Área Rural", "proxy_centroide": false, "metodo": "BrasilAPI / OSM", "cabeco": "12248", "setor": "Zona Rural Norte", "geo": "Sim"}];
+const TOTAL_VIN = DATA.reduce((s,d)=>s+d.vin,0);
+const TOTAL_VAT = DATA.reduce((s,d)=>s+d.vinA||0,0);
+const TOTAL_EST = DATA.length;
+
+let METRIC = 'vin';
+const METRIC_LABEL = {vin:'Vínculos CLT', est:'Estabelecimentos', media:'Média vínculos/estab.', simples:'% no Simples'};
+
+function uniq(a){return [...new Set(a)].sort((x,y)=>x.localeCompare(y,'pt-BR'))}
+function fmt(n){return n.toLocaleString('pt-BR')}
+function pct(n,total){return total ? (100*n/total).toFixed(1)+'%' : '0.0%'}
+
+function fill(id, vals){const s=document.getElementById(id);vals.forEach(v=>{const o=document.createElement('option');o.textContent=v;s.appendChild(o)})}
+fill('fSeg', uniq(DATA.map(d=>d.seg)));
+fill('fSet', uniq(DATA.map(d=>d.setor)));
+fill('fBai', uniq(DATA.filter(d=>d.bai).map(d=>d.bai)));
+fill('fTam', uniq(DATA.map(d=>d.tamf)).sort((a,b)=>DATA.find(d=>d.tamf===a).tamo - DATA.find(d=>d.tamf===b).tamo));
+fill('fNj', uniq(DATA.map(d=>d.nj)));
+
+document.getElementById('baiInfo')?.remove;
+
+function filtered(){
+  const seg=document.getElementById('fSeg').value,
+        set=document.getElementById('fSet').value,
+        bai=document.getElementById('fBai').value || '',
+        tam=document.getElementById('fTam').value,
+        sim=document.getElementById('fSimp').value,
+        nj=document.getElementById('fNj').value,
+        atv=document.getElementById('fAtv').value,
+        q=(document.getElementById('fQ').value||'').trim().toLowerCase();
+  return DATA.filter(d =>
+    (!seg||d.seg===seg)&&(!set||d.setor===set)&&(!bai||d.bai===bai)&&
+    (!tam||d.tamf===tam)&&(!sim||d.simp===sim)&&(!nj||d.nj===nj)&&(!atv||d.ativo===atv)&&
+    (!q||d.ativ.toLowerCase().includes(q)));
+}
+
+// Paleta sequencial laranja em 10 paradas (do menos para o mais intenso)
+const PAL = ['#fed7aa','#fdd9b6','#fdba74','#fb923c','#f97316','#ea580c','#c2410c','#9a3412','#7c2d12','#431407'];
+function corByValue(v, maxV, isPct){
+  // Escalas diferentes: percentual usa 5–8 paradas; absoluto usa 10
+  const sc = isPct ? PAL : PAL;
+  if (v <= 0) return '#fff1d6';
+  const t = v / Math.max(maxV, 1);
+  if (isPct){ if (t>=0.85) return '#9a3412'; if (t>=0.65) return '#c2410c'; if (t>=0.45) return '#ea580c';
+              if (t>=0.30) return '#f97316'; if (t>=0.15) return '#fb923c'; if (t>=0.05) return '#fdba74'; return '#fed7aa'; }
+  if (t>=0.92) return '#431407'; if (t>=0.80) return '#7c2d12'; if (t>=0.68) return '#9a3412';
+  if (t>=0.55) return '#c2410c'; if (t>=0.42) return '#ea580c'; if (t>=0.30) return '#f97316';
+  if (t>=0.20) return '#fb923c'; if (t>=0.12) return '#fdba74'; if (t>=0.05) return '#fdd9b6';
+  return '#fed7aa';
+}
+
+// ============ MAPA LEAFLET ============
+const map = L.map('map', {zoomControl:true, attributionControl:true}).setView([-23.1794, -45.8869], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18, minZoom: 10,
+  attribution: '© OpenStreetMap contributors · base RAIS (CSV original)'
+}).addTo(map);
+let markersLayer = L.layerGroup().addTo(map);
+
+function metricValue(d){
+  if (METRIC === 'vin') return d.vin;
+  if (METRIC === 'vinA') return d.vinA||d.vin;
+  if (METRIC === 'est') return 1;
+  if (METRIC === 'media') return d.est_count ? d.vin/d.est_count : 0;
+  if (METRIC === 'simples') return d.simp==='Sim' ? 100 : 0;
+  return d.vin;
+}
+
+function metricMax(rows){
+  if (METRIC === 'est') return Math.max(...rows.map(r=>r.est_count||1));
+  if (METRIC === 'simples') return 100;
+  return Math.max(...rows.map(r=>metricValue(r)));
+}
+
+function renderMap(){
+  markersLayer.clearLayers();
+  const rows = filtered().filter(r => r.lat != null && r.lon != null);
+  document.querySelectorAll('#tb').forEach(e=>{});
+  const isPct = (METRIC === 'simples');
+  const maxV  = metricMax(rows);
+  // adiciona marcadores: cada CIRCULO é um CEP (não cada estab.)
+  // agrega por CEP para não sobrepôr múltiplos estabelec. do mesmo CEP
+  const byCep = {};
+  rows.forEach(r => {
+    const k = r.cep;
+    byCep[k] = byCep[k] || {cep:k, lat:r.lat, lon:r.lon, logr:r.logradouro||'',
+        cabeço:r.cabeco, setor:r.setor, bairro:r.bai, vin:0, vinA:0, est:0,
+        simples:0, ativ_set:set(), atividades:[], ids:[]};
+    byCep[k].vin += r.vin; byCep[k].vinA += (r.vinA||r.vin);
+    byCep[k].est += 1;
+    if (r.simp==='Sim') byCep[k].simples += 1;
+    byCep[k].ativ_set.add(r.ativ);
+    byCep[k].atividades.push(`${r.ativ} (${r.vin} vínculos)`);
+    byCep[k].ids.push(r.id);
+  });
+  const ceps = Object.values(byCep);
+  // ordenar por valor p/ sobrepor maiores por cima
+  ceps.sort((a,b)=>metricValue(b)-metricValue(a));
+
+  // Também adiciona marcadores individuais (53 estab.) com popup rico
+  rows.forEach(r=>{
+    const v = metricValue(r);
+    const cor = corByValue(v, maxV, isPct);
+    const raio = METRIC==='simples' ? 10
+               : Math.max(8, Math.sqrt(metricValue(r))*2.5 + (METRIC==='est'?8:6));
+    const popup = `<div style="min-width:230px">
+      <b>${r.ativ}</b>
+      <div class="popnum">${fmt(METRIC==='simples'? (r.simp==='Sim'?100:0) : v)}${METRIC==='simples'?'%':''}</div>
+      <div class="poprow"><span>Estabelecimento #${r.id}</span><span>${fmt(r.vin)} vínculos</span></div>
+      <div class="poprow"><span>CNAE 2.0</span><span>${r.cnae2}</span></div>
+      <div class="poprow"><span>Setor/Natureza</span><span>${r.nj}</span></div>
+      <div class="poprow"><span>Faixa tamanho</span><span>${r.tamf}</span></div>
+      <div class="poprow"><span>Simples</span><span>${r.simp}</span></div>
+      <div class="poprow"><span>Setor postal</span><span>${r.setor} (${r.cabeco})</span></div>
+      ${r.bai?`<div class="poprow"><span>Bairro Nominatim</span><span>${r.bai}</span></div>`:''}
+      <div class="poprow"><span>CEP</span><span>${r.cep}</span></div>
+      ${r.logradouro?`<div class="poprow"><span>Logradouro aprox.</span><span style="font-size:11px">${r.logradouro}</span></div>`:''}
+      <div class="poprow"><span>Geocodificado por</span><span style="font-size:11px">${r.metodo||'OSM/Nominatim'}</span></div>
+    </div>`;
+    L.circleMarker([r.lat, r.lon], {
+      radius: raio,
+      color: r.proxy_centroide ? '#92400e' : '#7c2d12',
+      weight: r.proxy_centroide ? 1 : 1.5,
+      fillColor: cor,
+      fillOpacity: r.proxy_centroide ? 0.55 : 0.80,
+      opacity: r.proxy_centroide ? 0.55 : 1
+    }).bindPopup(popup).addTo(markersLayer);
+  });
+
+  // Ajustar viewport: se houver pontos, enquadrar; senão manter centro padrão
+  if (rows.length){
+    const bounds = L.latLngBounds(rows.map(r=>[r.lat, r.lon]));
+    map.fitBounds(bounds.pad(0.25));
+  }
+}
+
+// ============ HEATGRID + GRÁFICOS + KPIs ============
+function agg(rows,key,acc){const m={};rows.forEach(r=>{m[r[key]]=(m[r[key]]||0)+acc(r)});return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+function renderBars(el, rows, unit){
+  const max=Math.max(1,...rows.map(r=>r[1]));
+  document.getElementById(el).innerHTML = rows.map(([k,v])=>
+    `<div class="bar"><div class="t" title="${k}">${k}</div>
+     <div class="track"><div class="fill" style="width:${(v/max*100).toFixed(1)}%"></div></div>
+     <div class="n">${fmt(v)} ${unit||''}</div></div>`).join('') ||
+    '<div class="sub">Sem dados para os filtros atuais.</div>';
+}
+
+function renderHeatgrid(){
+  const rows = filtered();
+  const m = {};
+  rows.forEach(r => {
+    const k = r.cabeco;
+    m[k] = m[k] || {cabeco:k, setor:r.setor, est:0, vin:0, vinA:0, bairros:new Set(), simples:0};
+    m[k].est += 1; m[k].vin += r.vin; m[k].vinA += (r.vinA||r.vin);
+    if (r.bai) m[k].bairros.add(r.bai);
+    if (r.simp==='Sim') m[k].simples += 1;
+  });
+  const arr = Object.values(m).sort((a,b)=>b.vin - a.vin);
+  const max = Math.max(1, ...arr.map(s=>s.vin));
+  document.getElementById('heatgrid').innerHTML = arr.map(s => {
+    const share = (100*s.vin/TOTAL_VIN).toFixed(1)+'%';
+    const bg = corByValue(s.vin, TOTAL_VIN, false);
+    const dark = s.vin/max >= 0.18;
+    return `<div class="heatrow" title="Cabeço ${s.cabeco} · ${s.setor} · ${s.est} estab. · ${fmt(s.vin)} vínculos · ${share} do total · ${s.simples} no Simples">
+      <div class="headcode">${s.cabeco}</div>
+      <div class="headname"><b>${s.setor}</b></div>
+      <div class="heatcell ${dark?'':'light'}" style="background:${bg};flex:0 0 220px">
+        <span class="tagzinho">${s.est} estab.</span>
+        <span class="num">${fmt(s.vin)} vin. (${share})</span>
+      </div>
+      <div class="n" style="text-align:right;color:var(--mut)">${fmt(s.vinA)} ativos</div>
+      <div class="n" style="text-align:right;color:var(--mut)">${s.simples} Simples</div>
+    </div>`;
+  }).join('');
+}
+
+function topSetores(){
+  const rows = filtered();
+  const m = {};
+  rows.forEach(r=>{
+    const k=r.setor; if(!k) return;
+    m[k]=m[k]||{setor:k, vin:0, est:0, simples:0, vinA:0};
+    m[k].vin+=r.vin; m[k].vinA+=(r.vinA||r.vin); m[k].est+=1; if(r.simp==='Sim') m[k].simples+=1;
+  });
+  const arr = Object.values(m).sort((a,b)=>b.vin-a.vin).slice(0,6);
+  document.getElementById('topSetores').innerHTML = arr.length?arr.map(s=>{
+    const media = s.est?(s.vin/s.est):0;
+    const simplesP = s.est? (100*s.simples/s.est).toFixed(0):0;
+    return `<div class="sector-card">
+      <div class="sname">${s.setor}</div>
+      <div class="sv">${fmt(s.vin)}</div>
+      <div class="smeta">vínculos CLT · ${fmt(s.vinA)} ativos · ${s.est} estab. · média ${media.toFixed(1)} · ${simplesP}% Simples</div>
+    </div>`;
+  }).join(''):'<div class="sub">Sem dados.</div>';
+}
+
+function render(){
+  const rows = filtered();
+  document.getElementById('k1').textContent = fmt(rows.length);
+  const vin = rows.reduce((s,r)=>s+r.vin,0);
+  document.getElementById('k2').textContent = fmt(vin);
+  document.getElementById('k3').textContent = fmt(rows.reduce((s,r)=>s+(r.vinA||r.vin),0));
+  const simples = rows.filter(r=>r.simp==='Sim').length;
+  document.getElementById('k4').textContent = fmt(simples);
+  document.getElementById('k5').textContent = (100*simples/Math.max(rows.length,1)).toFixed(1)+'%';
+  document.getElementById('k6').textContent = fmt(uniq(rows.map(r=>r.setor)).length);
+  document.getElementById('k7').textContent = fmt(Math.max(0,...rows.map(r=>r.vin))) + ' vínculos';
+  document.getElementById('k8').textContent = fmt(rows.filter(r=>r.raisNeg==='Sim').length);
+
+  renderHeatgrid();
+  renderBars('cSeg', agg(rows,'seg',r=>r.vin), 'vin.');
+  const tamAgg = {}; rows.forEach(r=>{tamAgg[r.tamf]=(tamAgg[r.tamf]||0)+1});
+  renderBars('cTam', Object.entries(tamAgg).sort((a,b)=>(a[0].length-b[0].length)), 'estab.');
+  renderBars('cCnae', agg(rows,'ativ',r=>r.vin).slice(0,10), 'vin.');
+
+  document.getElementById('tb').innerHTML = rows.map(r=>
+    `<tr><td>${r.id}</td>
+     <td title="${r.ativ}">${r.ativ.length>54?r.ativ.slice(0,54)+'…':r.ativ}</td>
+     <td><b>${fmt(r.vin)}</b></td>
+     <td><b style="color:var(--acc2)">${r.setor}</b>${r.bai?'<br><small style="color:var(--mut)">'+r.bai+'</small>':''}</td>
+     <td>${r.cep}</td>
+     <td><span class="tag ${r.simp==='Sim'?'s':'n'}">${r.simp}</span></td>
+     </tr>`).join('') ||
+    '<tr><td colspan="6" class="sub">Nenhum registro para os filtros atuais.</td></tr>';
+
+  topSetores();
+  renderMap();
+
+  document.getElementById('footNote').innerHTML =
+    `Fonte: base RAIS (planilha enviada) · 53 estabelecimentos industriais químicos de São José dos Campos/SP (município 354990), `+
+    `${fmt(TOTAL_VIN)} vínculos CLT e ${fmt(TOTAL_VAT)} vínculos ativos (iguais nesta extração – 100% dos estab. classificados como “Atividade no Ano = Sim”).<br>`+
+    `Coordenadas geográficas: ${DATA.filter(d=>d.lat&&!d.proxy_centroide).length} de ${TOTAL_EST} registros geocodificados via `+
+    `BrasilAPI/OSM/Overpass em logradouro real; ${DATA.filter(d=>d.proxy_centroide).length} com coordenada no centroide do município `+
+    `(transparente no mapa). 13 coordenadas únicas obtidas — algumas microbacias logísticas têm o mesmo CEP-base dos Correios.<br>`+
+    `Cores em escala sequencial laranja (Power BI tema “RAIS Química SJC — laranja”). `+
+    `O mapa usa tiles OpenStreetMap (CDN público offline-friendly) sob licença ODbL.`;
+}
+
+['fSeg','fSet','fBai','fTam','fSimp','fNj','fAtv'].forEach(id=>
+  document.getElementById(id).addEventListener('change', render));
+document.getElementById('fQ').addEventListener('input', render);
+document.getElementById('fClr').addEventListener('click', ()=>{
+  ['fSeg','fSet','fBai','fTam','fSimp','fNj','fAtv'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fQ').value='';render();
+});
+document.querySelectorAll('.metricbtn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.metricbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  METRIC = b.dataset.metric;
+  renderMap();
+}));
+window.addEventListener('resize', ()=>setTimeout(renderMap, 200));
+render();
+</script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
